@@ -211,6 +211,9 @@ function MessagesContent() {
     };
 
     loadFriendAndMessages();
+    const interval = setInterval(loadFriendAndMessages, 2500);
+
+    return () => clearInterval(interval);
   }, [withUsername, profile, user, allUsers]);
 
   useEffect(() => {
