@@ -1,7 +1,7 @@
 "use client";
 
-import React, { Suspense, useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { Suspense, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Utensils,
   Mail,
@@ -20,6 +20,7 @@ import { useLanguage } from "@/context/LanguageContext";
 
 function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t } = useLanguage();
   const {
     signInWithGoogle,
@@ -30,6 +31,13 @@ function LoginContent() {
   } = useAuth();
 
   const [isSignUp, setIsSignUp] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("mode") === "signup") {
+      setIsSignUp(true);
+    }
+  }, [searchParams]);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -120,6 +128,7 @@ function LoginContent() {
         {/* Mode Switcher Tabs */}
         <div className="grid grid-cols-2 p-1 rounded-2xl bg-neutral-100 dark:bg-[#121316] border border-[#EFE6D8] dark:border-[#2C2E38]">
           <button
+            id="tab-sign-in"
             type="button"
             onClick={() => {
               setIsSignUp(false);
@@ -135,6 +144,7 @@ function LoginContent() {
             {t.signIn}
           </button>
           <button
+            id="tab-sign-up"
             type="button"
             onClick={() => {
               setIsSignUp(true);

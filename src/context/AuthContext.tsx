@@ -120,7 +120,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       toggleDemoLogin();
       return { error: null };
     }
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    // If Supabase returned "Email not confirmed", auto-confirm via admin endpoint and retry
+    if (error && error.message?.toLowerCase().includes("email not confirmed")) {
+      try {
+        const confirmRes = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            password,
+            username: email.split("@")[0],
+            fullName: "",
+          }),
+        });
+
+        if (confirmRes.ok) {
+          const retry = await supabase.auth.signInWithPassword({ email, password });
+          if (!retry.error) {
+            return { error: null };
+          }
+        }
+      } catch (_) {}
+    }
+
     return { error: error as Error | null };
   };
 
@@ -134,6 +158,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error: new Error("Supabase is not configured yet"), session: null };
     }
     const cleanUsername = username.toLowerCase().replace(/[^a-z0-9_]/g, "") || `user_${Date.now()}`;
+
+    // 1. First try creating an auto-confirmed user via our server admin endpoint
+    try {
+      const regRes = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          username: cleanUsername,
+          fullName: fullName || cleanUsername,
+        }),
+      });
+
+      const regData = await regRes.json();
+
+      if (regRes.ok) {
+        // Automatically sign in immediately with credentials
+        const signInRes = await supabase.auth.signInWithPassword({ email, password });
+        if (signInRes.data?.session?.user) {
+          setUser(signInRes.data.session.user);
+          return { error: null, session: signInRes.data.session };
+        }
+      } else if (regData.error && !regData.error.includes("already registered")) {
+        return { error: new Error(regData.error), session: null };
+      }
+    } catch (_) {}
+
+    // Fallback: standard supabase signUp
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
