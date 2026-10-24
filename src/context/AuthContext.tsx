@@ -53,14 +53,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (prof) {
             setProfile(prof as Profile);
           } else {
-            // Fallback profile if trigger hasn't fired yet
-            setProfile({
+            const cleanUsername =
+              user.user_metadata?.username ||
+              user.user_metadata?.user_name ||
+              user.email?.split("@")[0]?.toLowerCase().replace(/[^a-z0-9_]/g, "") ||
+              `foodie_${Date.now()}`;
+
+            const newProf: Profile = {
               id: user.id,
-              username: user.email?.split("@")[0] || "user",
-              full_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "",
-              avatar_url: user.user_metadata?.avatar_url || "",
+              username: cleanUsername,
+              full_name:
+                user.user_metadata?.full_name ||
+                user.user_metadata?.name ||
+                cleanUsername,
+              avatar_url:
+                user.user_metadata?.avatar_url ||
+                user.user_metadata?.picture ||
+                "",
               bio: "Khmer food lover",
-            });
+            };
+
+            try {
+              await supabase.from("profiles").upsert(newProf, { onConflict: "id" });
+            } catch (_) {}
+
+            setProfile(newProf);
           }
         }
       } catch (err) {
@@ -84,7 +101,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .eq("id", currentUser.id)
             .single();
 
-          if (prof) setProfile(prof as Profile);
+          if (prof) {
+            setProfile(prof as Profile);
+          } else {
+            const cleanUsername =
+              currentUser.user_metadata?.username ||
+              currentUser.user_metadata?.user_name ||
+              currentUser.email?.split("@")[0]?.toLowerCase().replace(/[^a-z0-9_]/g, "") ||
+              `foodie_${Date.now()}`;
+
+            const newProf: Profile = {
+              id: currentUser.id,
+              username: cleanUsername,
+              full_name:
+                currentUser.user_metadata?.full_name ||
+                currentUser.user_metadata?.name ||
+                cleanUsername,
+              avatar_url:
+                currentUser.user_metadata?.avatar_url ||
+                currentUser.user_metadata?.picture ||
+                "",
+              bio: "Khmer food lover",
+            };
+
+            try {
+              await supabase.from("profiles").upsert(newProf, { onConflict: "id" });
+            } catch (_) {}
+
+            setProfile(newProf);
+          }
         } else {
           setProfile(null);
         }
