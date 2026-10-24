@@ -31,14 +31,30 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const applyTheme = (t: Theme) => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    const body = document.body;
+
     if (t === "dark") {
-      document.documentElement.classList.add("dark");
-      document.documentElement.classList.remove("light");
-      document.documentElement.style.colorScheme = "dark";
+      root.classList.add("dark");
+      root.classList.remove("light");
+      root.setAttribute("data-theme", "dark");
+      root.style.colorScheme = "dark";
+      if (body) {
+        body.classList.add("dark");
+        body.classList.remove("light");
+        body.setAttribute("data-theme", "dark");
+      }
     } else {
-      document.documentElement.classList.remove("dark");
-      document.documentElement.classList.add("light");
-      document.documentElement.style.colorScheme = "light";
+      root.classList.remove("dark");
+      root.classList.add("light");
+      root.setAttribute("data-theme", "light");
+      root.style.colorScheme = "light";
+      if (body) {
+        body.classList.remove("dark");
+        body.classList.add("light");
+        body.setAttribute("data-theme", "light");
+      }
     }
   };
 
@@ -51,8 +67,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   const toggleTheme = () => {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
+    setThemeState((current) => {
+      const next = current === "dark" ? "light" : "dark";
+      try {
+        localStorage.setItem("numpang_theme", next);
+      } catch {}
+      applyTheme(next);
+      return next;
+    });
   };
 
   return (
