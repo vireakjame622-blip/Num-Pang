@@ -39,6 +39,7 @@ function UserProfileContent() {
   const [activeTab, setActiveTab] = useState<"posts" | "saved">("posts");
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   // Edit Modal State
@@ -107,8 +108,33 @@ function UserProfileContent() {
         setEditName(foundProfile.full_name || "");
         setEditBio(foundProfile.bio || "");
         setEditAvatar(foundProfile.avatar_url || "");
-        setFollowersCount(foundProfile.followers_count || 140);
+        
+        const isDemoProfile = Object.values(DEMO_PROFILES).some(
+          (p) => p.username.toLowerCase() === foundProfile?.username.toLowerCase()
+        );
+        setFollowersCount(foundProfile.followers_count ?? (isDemoProfile ? 140 : 0));
+        setFollowingCount(foundProfile.following_count ?? (isDemoProfile ? 48 : 0));
         setIsFollowing(!!foundProfile.is_following);
+
+        // Fetch real follower & following counts from Supabase if configured
+        if (isSupabaseConfigured() && targetUserId && !isDemoProfile) {
+          try {
+            const supabase = createClient();
+            const { count: fCount } = await supabase
+              .from("follows")
+              .select("*", { count: "exact", head: true })
+              .eq("following_id", targetUserId);
+            if (typeof fCount === "number") setFollowersCount(fCount);
+
+            const { count: ingCount } = await supabase
+              .from("follows")
+              .select("*", { count: "exact", head: true })
+              .eq("follower_id", targetUserId);
+            if (typeof ingCount === "number") setFollowingCount(ingCount);
+          } catch {
+            // fallback
+          }
+        }
 
         // Fetch User's Posts
         const localPosts: Post[] = JSON.parse(
@@ -320,7 +346,7 @@ function UserProfileContent() {
           </div>
           <div>
             <div className="text-sm font-extrabold text-neutral-900 dark:text-neutral-100">
-              {profileData.following_count || 48}
+              {followingCount}
             </div>
             <div className="text-[10px] text-neutral-500">{t.following}</div>
           </div>
