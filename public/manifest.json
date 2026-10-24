@@ -1,0 +1,17 @@
+{
+  "name": "Num Pang - Street Food Cambodia",
+  "short_name": "Num Pang",
+  "description": "Discover and share authentic Khmer street food spots across Cambodia.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAF7F2",
+  "theme_color": "#C85A32",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
