@@ -14,7 +14,7 @@ interface AuthContextType {
   isDemoUser: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUpWithEmail: (email: string, password: string, username: string, fullName: string) => Promise<{ error: Error | null }>;
+  signUpWithEmail: (email: string, password: string, username: string, fullName: string) => Promise<{ error: Error | null; session?: any }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
   toggleDemoLogin: () => void;
@@ -135,20 +135,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     fullName: string
   ) => {
     if (!configured) {
-      toggleDemoLogin();
-      return { error: null };
+      return { error: new Error("Supabase is not configured yet"), session: null };
     }
-    const { error } = await supabase.auth.signUp({
+    const cleanUsername = username.toLowerCase().replace(/[^a-z0-9_]/g, "") || `user_${Date.now()}`;
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
-          username,
+          username: cleanUsername,
           full_name: fullName,
         },
       },
     });
-    return { error: error as Error | null };
+
+    if (error) {
+      return { error: error as Error | null, session: null };
+    }
+
+    if (data?.session?.user) {
+      setUser(data.session.user);
+      try {
+        await supabase.from("profiles").upsert({
+          id: data.session.user.id,
+          username: cleanUsername,
+          full_name: fullName || cleanUsername,
+          avatar_url: "",
+          bio: "Khmer food lover",
+        });
+      } catch (_) {}
+    }
+
+    return { error: null, session: data?.session };
   };
 
   const signOut = async () => {

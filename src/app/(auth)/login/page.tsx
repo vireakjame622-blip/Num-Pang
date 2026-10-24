@@ -66,12 +66,15 @@ function LoginContent() {
           setLoading(false);
           return;
         }
-        const { error } = await signUpWithEmail(email, password, username, fullName);
+        const { error, session } = await signUpWithEmail(email, password, username, fullName);
         if (error) {
           setErrorMsg(error.message);
+        } else if (session) {
+          setSuccessNotice("Account created successfully! Redirecting...");
+          setTimeout(() => router.push("/"), 700);
         } else {
-          setSuccessNotice("Account created! Check your email for confirmation link.");
-          setTimeout(() => router.push("/"), 1500);
+          setSuccessNotice("Account registered! Please log in with your new account credentials.");
+          setIsSignUp(false);
         }
       } else {
         const { error } = await signInWithEmail(email, password);

@@ -86,4 +86,15 @@ export interface Block {
   created_at: string;
 }
 
+export interface ChatMessage {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+  created_at: string;
+  read?: boolean;
+  sender?: Profile;
+  receiver?: Profile;
+}
+
 export type Language = 'en' | 'km';

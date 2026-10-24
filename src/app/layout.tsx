@@ -52,6 +52,25 @@ export default function RootLayout({
 }) {
   return (
     <html lang="km" suppressHydrationWarning className={`${kantumruy.variable} ${jakarta.variable}`}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var savedTheme = localStorage.getItem('numpang_theme');
+                var systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (savedTheme === 'dark' || (!savedTheme && systemDark)) {
+                  document.documentElement.classList.add('dark');
+                  document.documentElement.style.colorScheme = 'dark';
+                } else {
+                  document.documentElement.classList.remove('dark');
+                  document.documentElement.style.colorScheme = 'light';
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
+      </head>
       <body className="font-sans antialiased bg-[#FAF7F2] dark:bg-[#121316] text-[#231F20] dark:text-[#F3F4F6] selection:bg-[#C85A32]/20 selection:text-[#C85A32]">
         <ThemeProvider>
           <LanguageProvider>

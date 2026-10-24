@@ -16,6 +16,7 @@ import {
   Check,
   MapPin,
   UtensilsCrossed,
+  MessageCircle,
 } from "lucide-react";
 import { Post, Profile } from "@/types";
 import { useAuth } from "@/context/AuthContext";
@@ -298,6 +299,14 @@ function UserProfileContent() {
                     </>
                   )}
                 </button>
+
+                <Link
+                  href={`/messages?with=${profileData.username}`}
+                  className="px-3 py-1.5 rounded-xl border border-[#EFE6D8] dark:border-[#2C2E38] text-xs font-bold text-neutral-800 dark:text-neutral-200 hover:border-[#C85A32] transition-colors flex items-center gap-1.5"
+                >
+                  <MessageCircle className="w-3.5 h-3.5 text-[#C85A32]" />
+                  <span>{t.messageFriend}</span>
+                </Link>
 
                 <button
                   onClick={() => setModModal({ isOpen: true, type: "report" })}

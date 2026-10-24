@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Utensils, Moon, Sun, Globe, Search, ShieldAlert } from "lucide-react";
+import { Utensils, Moon, Sun, Globe, Search, MessageCircle, ShieldAlert } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
@@ -48,6 +48,19 @@ export function Navbar() {
             }`}
           >
             <Search className="w-5 h-5" />
+          </Link>
+
+          {/* Messages / Chat Button */}
+          <Link
+            href="/messages"
+            aria-label={t.messages}
+            className={`p-2 rounded-xl transition-colors ${
+              pathname.startsWith("/messages")
+                ? "bg-[#C85A32]/10 text-[#C85A32] dark:bg-[#C85A32]/20"
+                : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200/50 dark:hover:bg-neutral-800"
+            }`}
+          >
+            <MessageCircle className="w-5 h-5" />
           </Link>
 
           {/* Language Switcher */}

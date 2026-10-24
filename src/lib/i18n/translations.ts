@@ -111,6 +111,16 @@ export const translations = {
     demoAccount: "Try Demo Account",
     demoModeNotice: "Running in interactive demo mode (instant preview)",
 
+    // Chat
+    messages: "Messages",
+    chatWith: "Chat with",
+    typeMessage: "Type a message...",
+    send: "Send",
+    noMessagesYet: "No messages yet. Say hello!",
+    startConversation: "Start a conversation",
+    directMessages: "Direct Messages",
+    messageFriend: "Message",
+
     // Legal
     privacyPolicy: "Privacy Policy",
     termsOfService: "Terms of Service",
@@ -228,6 +238,16 @@ export const translations = {
     signUp: "បង្កើតគណនី",
     demoAccount: "សាកល្បងគណនីគំរូ",
     demoModeNotice: "កំពុងដំណើរការសាកល្បង Demo (មើលលទ្ធផលភ្លាមៗ)",
+
+    // Chat
+    messages: "សារជជែក",
+    chatWith: "ជជែកជាមួយ",
+    typeMessage: "សរសេរសារ...",
+    send: "ផ្ញើ",
+    noMessagesYet: "មិនទាន់មានសារនៅឡើយទេ។ ផ្ញើសួរសុខទុក្ខគ្នា!",
+    startConversation: "ចាប់ផ្តើមការសន្ទនា",
+    directMessages: "សារផ្ទាល់ខ្លួន",
+    messageFriend: "ផ្ញើសារ",
 
     // Legal
     privacyPolicy: "គោលការណ៍ឯកជនភាព",

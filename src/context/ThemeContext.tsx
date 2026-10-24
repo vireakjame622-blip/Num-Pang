@@ -33,14 +33,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const applyTheme = (t: Theme) => {
     if (t === "dark") {
       document.documentElement.classList.add("dark");
+      document.documentElement.classList.remove("light");
+      document.documentElement.style.colorScheme = "dark";
     } else {
       document.documentElement.classList.remove("dark");
+      document.documentElement.classList.add("light");
+      document.documentElement.style.colorScheme = "light";
     }
   };
 
   const setTheme = (t: Theme) => {
     setThemeState(t);
-    localStorage.setItem("numpang_theme", t);
+    try {
+      localStorage.setItem("numpang_theme", t);
+    } catch {}
     applyTheme(t);
   };
 
@@ -51,7 +57,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
-      <div className={mounted ? "" : "invisible"}>{children}</div>
+      {children}
     </ThemeContext.Provider>
   );
 }
