@@ -74,14 +74,6 @@ export function Navbar() {
           </button>
         </div>
       </div>
-
-      {/* Demo Mode Sub-banner (if Supabase not configured) */}
-      {!isConfigured && (
-        <div className="bg-[#E5BE48]/15 dark:bg-[#E5BE48]/20 border-t border-[#E5BE48]/30 px-3 py-1 text-center text-xs text-[#8A6700] dark:text-[#F3CD5A] flex items-center justify-center gap-1.5 font-medium">
-          <ShieldAlert className="w-3.5 h-3.5 flex-shrink-0" />
-          <span>Interactive Demo Mode with authentic sample street dishes</span>
-        </div>
-      )}
     </header>
   );
 }

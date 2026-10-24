@@ -1,10 +1,10 @@
 "use client";
 
-import React, { Suspense, useState, useMemo } from "react";
+import React, { Suspense, useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { Search, Utensils, Users, MapPin, ChevronRight, UserPlus, Check } from "lucide-react";
 import { Post, Profile } from "@/types";
-import { INITIAL_POSTS, DEMO_PROFILES } from "@/lib/demo-data";
+import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 
@@ -14,16 +14,38 @@ function SearchContent() {
   const { profile } = useAuth();
   const [query, setQuery] = useState("");
   const [filterType, setFilterType] = useState<"all" | "dishes" | "users">("all");
-  const [followedMap, setFollowedMap] = useState<Record<string, boolean>>({
-    "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11": true,
-  });
+  const [followedMap, setFollowedMap] = useState<Record<string, boolean>>({});
+  const [dbPosts, setDbPosts] = useState<Post[]>([]);
+  const [dbUsers, setDbUsers] = useState<Profile[]>([]);
 
   const localPosts: Post[] = typeof window !== "undefined"
     ? JSON.parse(localStorage.getItem("numpang_local_posts") || "[]")
     : [];
 
-  const allPosts = useMemo(() => [...localPosts, ...INITIAL_POSTS], [localPosts]);
-  const allUsers = useMemo(() => Object.values(DEMO_PROFILES), []);
+  useEffect(() => {
+    const fetchData = async () => {
+      if (isSupabaseConfigured()) {
+        try {
+          const supabase = createClient();
+          const { data: postsData } = await supabase
+            .from("posts")
+            .select("*, profiles(*)")
+            .limit(40);
+          if (postsData) setDbPosts(postsData as Post[]);
+
+          const { data: usersData } = await supabase
+            .from("profiles")
+            .select("*")
+            .limit(40);
+          if (usersData) setDbUsers(usersData as Profile[]);
+        } catch {}
+      }
+    };
+    fetchData();
+  }, []);
+
+  const allPosts = useMemo(() => [...localPosts, ...dbPosts], [localPosts, dbPosts]);
+  const allUsers = useMemo(() => dbUsers, [dbUsers]);
 
   // Filter dishes
   const matchedPosts = useMemo(() => {

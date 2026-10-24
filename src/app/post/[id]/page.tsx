@@ -54,11 +54,6 @@ function PostContent() {
         }
       }
 
-      // Check demo seed posts
-      const foundDemo = INITIAL_POSTS.find((p) => p.id === id);
-      if (foundDemo) {
-        setPost(foundDemo);
-      }
       setLoading(false);
     };
 

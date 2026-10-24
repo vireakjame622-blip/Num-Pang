@@ -33,12 +33,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!configured) {
-      // In demo mode without configured Supabase credentials, provide demo user by default
-      const demoActive = localStorage.getItem("numpang_demo_active") !== "false";
-      if (demoActive) {
-        setIsDemoUser(true);
-        setProfile(DEMO_USER);
-      }
       setLoading(false);
       return;
     }

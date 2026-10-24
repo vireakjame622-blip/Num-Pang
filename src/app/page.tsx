@@ -52,7 +52,7 @@ function FeedContent() {
 
           const { data, error } = await query;
 
-          if (!error && data && data.length > 0) {
+          if (!error && data) {
             const cleanData = (data as Post[]).filter(
               (p) => !blockedUsers.includes(p.user_id)
             );
@@ -61,12 +61,12 @@ function FeedContent() {
             return;
           }
         } catch (err) {
-          console.warn("Supabase fetch failed, falling back to demo data", err);
+          console.warn("Supabase fetch error:", err);
         }
       }
 
-      // Fallback Demo Data + User Created Local Posts
-      const combined = [...localNewPosts, ...INITIAL_POSTS];
+      // Show real user created local posts if any
+      const combined = [...localNewPosts];
       let filtered = combined.filter((p) => !blockedUsers.includes(p.user_id));
 
       if (selectedCategory !== "all") {

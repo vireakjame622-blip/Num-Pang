@@ -49,13 +49,10 @@ function SavedContent() {
         }
       }
 
-      // Fallback: check INITIAL_POSTS that match localSavedIds or default marked ones
       const localPosts: Post[] = JSON.parse(
         localStorage.getItem("numpang_local_posts") || "[]"
       );
-      const all = [...localPosts, ...INITIAL_POSTS];
-
-      const filtered = all.filter(
+      const filtered = localPosts.filter(
         (p) => localSavedIds.includes(p.id) || p.is_saved
       );
 

@@ -261,21 +261,6 @@ function LoginContent() {
         </div>
       </div>
 
-      {/* Instant Demo Account Option */}
-      <div className="p-4 rounded-3xl bg-[#FAF7F2] dark:bg-[#1B1C22] border border-[#EFE6D8] dark:border-[#2C2E38] text-center space-y-2">
-        <p className="text-xs font-bold text-neutral-800 dark:text-neutral-200">
-          Want to test the app right now?
-        </p>
-        <p className="text-[11px] text-neutral-500">
-          Try our interactive demo account without needing Google OAuth setup.
-        </p>
-        <button
-          onClick={handleDemoSignIn}
-          className="px-4 py-2 rounded-xl bg-[#C85A32] text-white text-xs font-bold hover:bg-[#B34925] transition-colors shadow-xs"
-        >
-          {t.demoAccount}
-        </button>
-      </div>
 
       {/* Google OAuth & Supabase Setup Instructions */}
       <div className="rounded-3xl border border-[#EFE6D8] dark:border-[#2C2E38] bg-white dark:bg-[#1B1C22] overflow-hidden shadow-xs">

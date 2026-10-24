@@ -70,21 +70,9 @@ function UserProfileContent() {
       if (currentAuthProfile && currentAuthProfile.username === username) {
         foundProfile = currentAuthProfile;
         targetUserId = currentAuthProfile.id;
-      } else {
-        // Check demo profiles
-        const demoMatch = Object.values(DEMO_PROFILES).find(
-          (p) => p.username.toLowerCase() === username.toLowerCase()
-        );
-        if (demoMatch) {
-          foundProfile = demoMatch;
-          targetUserId = demoMatch.id;
-        } else if (username === DEMO_USER.username) {
-          foundProfile = DEMO_USER;
-          targetUserId = DEMO_USER.id;
-        }
       }
 
-      // Check Supabase if configured and not found yet
+      // Check Supabase if not found yet
       if (!foundProfile && isSupabaseConfigured()) {
         try {
           const supabase = createClient();
@@ -109,15 +97,12 @@ function UserProfileContent() {
         setEditBio(foundProfile.bio || "");
         setEditAvatar(foundProfile.avatar_url || "");
         
-        const isDemoProfile = Object.values(DEMO_PROFILES).some(
-          (p) => p.username.toLowerCase() === foundProfile?.username.toLowerCase()
-        );
-        setFollowersCount(foundProfile.followers_count ?? (isDemoProfile ? 140 : 0));
-        setFollowingCount(foundProfile.following_count ?? (isDemoProfile ? 48 : 0));
+        setFollowersCount(foundProfile.followers_count ?? 0);
+        setFollowingCount(foundProfile.following_count ?? 0);
         setIsFollowing(!!foundProfile.is_following);
 
-        // Fetch real follower & following counts from Supabase if configured
-        if (isSupabaseConfigured() && targetUserId && !isDemoProfile) {
+        // Fetch real follower & following counts from Supabase
+        if (isSupabaseConfigured() && targetUserId) {
           try {
             const supabase = createClient();
             const { count: fCount } = await supabase
@@ -136,24 +121,35 @@ function UserProfileContent() {
           }
         }
 
-        // Fetch User's Posts
+        // Fetch User's Posts from Supabase
+        let userDbPosts: Post[] = [];
+        if (isSupabaseConfigured() && targetUserId) {
+          try {
+            const supabase = createClient();
+            const { data: dbPosts } = await supabase
+              .from("posts")
+              .select("*, profiles(*)")
+              .eq("user_id", targetUserId)
+              .order("created_at", { ascending: false });
+            if (dbPosts) userDbPosts = dbPosts as Post[];
+          } catch {}
+        }
+
         const localPosts: Post[] = JSON.parse(
           localStorage.getItem("numpang_local_posts") || "[]"
         );
-        const allPosts = [...localPosts, ...INITIAL_POSTS];
-        const matchingPosts = allPosts.filter(
-          (p) =>
-            p.user_id === targetUserId ||
-            p.profiles?.username === foundProfile?.username
+        const matchingLocal = localPosts.filter(
+          (p) => p.user_id === targetUserId || p.profiles?.username === foundProfile?.username
         );
-        setUserPosts(matchingPosts);
+        const combinedUserPosts = [...userDbPosts, ...matchingLocal];
+        setUserPosts(combinedUserPosts);
 
         // Fetch Saved Posts if owner
         if (isOwner) {
           const localSaved: string[] = JSON.parse(
             localStorage.getItem("numpang_saved") || "[]"
           );
-          const savedList = allPosts.filter(
+          const savedList = combinedUserPosts.filter(
             (p) => localSaved.includes(p.id) || p.is_saved
           );
           setSavedPosts(savedList);

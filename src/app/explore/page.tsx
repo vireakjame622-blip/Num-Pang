@@ -48,7 +48,7 @@ function ExploreContent() {
             .from("posts")
             .select("*, profiles(*)");
 
-          if (data && data.length > 0) {
+          if (data) {
             const clean = (data as Post[]).filter(
               (p) => !blockedUsers.includes(p.user_id)
             );
@@ -61,11 +61,8 @@ function ExploreContent() {
         }
       }
 
-      // Fallback Demo Data + Local posts
-      const combined = [...localPosts, ...INITIAL_POSTS].filter(
-        (p) => !blockedUsers.includes(p.user_id)
-      );
-      setPosts(combined);
+      const cleanLocal = localPosts.filter((p) => !blockedUsers.includes(p.user_id));
+      setPosts(cleanLocal);
       setLoading(false);
     };
 
