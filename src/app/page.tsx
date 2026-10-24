@@ -7,6 +7,7 @@ import { Post } from "@/types";
 import { PostCard } from "@/components/feed/PostCard";
 import { CategoryPills } from "@/components/feed/CategoryPills";
 import { SkeletonCard } from "@/components/feed/SkeletonCard";
+import { LocationBanner } from "@/components/common/LocationBanner";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
 import { INITIAL_POSTS } from "@/lib/demo-data";
@@ -106,6 +107,9 @@ function FeedContent() {
 
   return (
     <div className="px-4 py-3 max-w-lg mx-auto">
+      {/* Location Banner (shows current location & GPS) */}
+      <LocationBanner />
+
       {/* 1. Feed Tabs: Discover vs Following */}
       <div className="flex items-center justify-center p-1 bg-neutral-200/60 dark:bg-neutral-800/60 rounded-2xl mb-3">
         <button

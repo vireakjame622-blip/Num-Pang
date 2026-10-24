@@ -7,6 +7,7 @@ import "leaflet/dist/leaflet.css";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { LocationProvider } from "@/context/LocationContext";
 import { Navbar } from "@/components/common/Navbar";
 import { BottomNav } from "@/components/common/BottomNav";
 
@@ -75,19 +76,21 @@ export default function RootLayout({
         <ThemeProvider>
           <LanguageProvider>
             <AuthProvider>
-              <div className="min-h-screen flex flex-col max-w-xl mx-auto bg-[#FAF7F2] dark:bg-[#121316] relative border-x border-[#EFE6D8]/60 dark:border-[#2C2E38]/60 shadow-sm">
-                <Suspense fallback={<div className="h-15 w-full bg-[#FAF7F2] dark:bg-[#121316]" />}>
-                  <Navbar />
-                </Suspense>
-                <main className="flex-1 pb-24 overflow-x-hidden">
-                  <Suspense fallback={null}>
-                    {children}
+              <LocationProvider>
+                <div className="min-h-screen flex flex-col max-w-xl mx-auto bg-[#FAF7F2] dark:bg-[#121316] relative border-x border-[#EFE6D8]/60 dark:border-[#2C2E38]/60 shadow-sm">
+                  <Suspense fallback={<div className="h-15 w-full bg-[#FAF7F2] dark:bg-[#121316]" />}>
+                    <Navbar />
                   </Suspense>
-                </main>
-                <Suspense fallback={<div className="h-16 w-full" />}>
-                  <BottomNav />
-                </Suspense>
-              </div>
+                  <main className="flex-1 pb-24 overflow-x-hidden">
+                    <Suspense fallback={null}>
+                      {children}
+                    </Suspense>
+                  </main>
+                  <Suspense fallback={<div className="h-16 w-full" />}>
+                    <BottomNav />
+                  </Suspense>
+                </div>
+              </LocationProvider>
             </AuthProvider>
           </LanguageProvider>
         </ThemeProvider>

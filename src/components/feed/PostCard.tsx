@@ -13,10 +13,12 @@ import {
   ShieldAlert,
   Ban,
   Check,
+  Navigation,
 } from "lucide-react";
 import { Post, Comment } from "@/types";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { useLocation } from "@/context/LocationContext";
 import { CommentDrawer } from "./CommentDrawer";
 import { ModerationModal } from "../common/ModerationModal";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -29,7 +31,8 @@ interface PostCardProps {
 
 export function PostCard({ post, onDelete, onPostUpdate }: PostCardProps) {
   const { profile } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const { getDistance, getDirectionsUrl } = useLocation();
 
   const [isLiked, setIsLiked] = useState(post.is_liked || false);
   const [likesCount, setLikesCount] = useState(post.likes_count || 0);
@@ -385,13 +388,35 @@ export function PostCard({ post, onDelete, onPostUpdate }: PostCardProps) {
 
         {/* 4. Dish Title & Location */}
         <div>
-          <Link
-            href={`/explore?lat=${post.latitude}&lng=${post.longitude}`}
-            className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#C85A32] dark:text-[#E06D44] hover:underline mb-1"
-          >
-            <MapPin className="w-3.5 h-3.5" />
-            <span className="truncate">{post.location_name}</span>
-          </Link>
+          <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+            <Link
+              href={`/explore?lat=${post.latitude}&lng=${post.longitude}`}
+              className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#C85A32] dark:text-[#E06D44] hover:underline"
+            >
+              <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="truncate max-w-[200px] sm:max-w-xs">{post.location_name}</span>
+              {(() => {
+                const dist = getDistance(post.latitude, post.longitude);
+                if (!dist) return null;
+                return (
+                  <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-[#C85A32]/10 text-[#C85A32] dark:bg-[#C85A32]/20">
+                    {dist.formatted}
+                  </span>
+                );
+              })()}
+            </Link>
+
+            <a
+              href={getDirectionsUrl(post.latitude, post.longitude, post.dish_name)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:text-[#C85A32] dark:hover:text-[#E06D44] transition-colors"
+              title="Open in Google Maps"
+            >
+              <Navigation className="w-3 h-3 text-[#C85A32]" />
+              <span>{language === "km" ? "មើលផ្លូវ" : "Directions"}</span>
+            </a>
+          </div>
 
           {post.caption && (
             <p className="text-xs sm:text-sm text-neutral-800 dark:text-neutral-200 leading-relaxed whitespace-pre-wrap">

@@ -4,6 +4,7 @@ import React, { Suspense, useEffect, useState, useMemo } from "react";
 import dynamicMap from "next/dynamic";
 import { Search, Compass, MapPin } from "lucide-react";
 import { CategoryPills } from "@/components/feed/CategoryPills";
+import { LocationBanner } from "@/components/common/LocationBanner";
 import { Post } from "@/types";
 import { INITIAL_POSTS } from "@/lib/demo-data";
 import { useLanguage } from "@/context/LanguageContext";
@@ -85,6 +86,9 @@ function ExploreContent() {
 
   return (
     <div className="px-4 py-3 max-w-lg mx-auto space-y-3">
+      {/* Location Banner (shows current location & GPS) */}
+      <LocationBanner />
+
       {/* Search Header */}
       <div className="relative">
         <Search className="w-4 h-4 text-neutral-400 absolute left-3.5 top-3" />

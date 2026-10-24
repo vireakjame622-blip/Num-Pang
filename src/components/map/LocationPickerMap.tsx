@@ -61,11 +61,8 @@ export default function LocationPickerMap({
 
       L.control.zoom({ position: "bottomright" }).addTo(map);
 
-      // Select tiles based on dark/light mode (Free OpenStreetMap / CartoDB)
-      const tileUrl =
-        theme === "dark"
-          ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          : "https://{s}.tile.openstreetmap.org/{z}/{x}.png";
+      // OpenStreetMap free tile layer
+      const tileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}.png";
 
       L.tileLayer(tileUrl, {
         maxZoom: 19,
