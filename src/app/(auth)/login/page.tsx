@@ -117,13 +117,66 @@ function LoginContent() {
 
       {/* Card */}
       <div className="bg-white dark:bg-[#1B1C22] rounded-3xl p-6 border border-[#EFE6D8] dark:border-[#2C2E38] shadow-sm space-y-5">
+        {/* Mode Switcher Tabs */}
+        <div className="grid grid-cols-2 p-1 rounded-2xl bg-neutral-100 dark:bg-[#121316] border border-[#EFE6D8] dark:border-[#2C2E38]">
+          <button
+            type="button"
+            onClick={() => {
+              setIsSignUp(false);
+              setErrorMsg("");
+              setSuccessNotice("");
+            }}
+            className={`py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+              !isSignUp
+                ? "bg-white dark:bg-[#1B1C22] text-[#C85A32] shadow-sm"
+                : "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200"
+            }`}
+          >
+            {t.signIn}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setIsSignUp(true);
+              setErrorMsg("");
+              setSuccessNotice("");
+            }}
+            className={`py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+              isSignUp
+                ? "bg-white dark:bg-[#1B1C22] text-[#C85A32] shadow-sm"
+                : "text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200"
+            }`}
+          >
+            {t.signUp}
+          </button>
+        </div>
+
         {errorMsg && (
-          <div className="p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 text-red-700 dark:text-red-300 text-xs flex items-start gap-2.5 leading-relaxed">
-            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-red-600" />
-            <div>
-              <p className="font-bold">Authentication Notice</p>
-              <p className="mt-0.5">{errorMsg}</p>
+          <div className="p-3.5 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/40 text-red-700 dark:text-red-300 text-xs flex flex-col gap-2 leading-relaxed">
+            <div className="flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-red-600" />
+              <div>
+                <p className="font-bold">Authentication Notice</p>
+                <p className="mt-0.5">{errorMsg}</p>
+              </div>
             </div>
+            {errorMsg.toLowerCase().includes("invalid login credentials") && !isSignUp && (
+              <div className="mt-1 pt-2 border-t border-red-200/60 dark:border-red-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <span className="text-[11px] text-neutral-600 dark:text-neutral-300">
+                  មិនទាន់មានគណនីមែនទេ?
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSignUp(true);
+                    setErrorMsg("");
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-[#C85A32] text-white text-[11px] font-bold hover:bg-[#B34925] transition-colors inline-block w-fit cursor-pointer"
+                >
+                  ចុចទីនេះដើម្បីចុះឈ្មោះបង្កើតគណនីថ្មី
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -254,7 +307,7 @@ function LoginContent() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-xl bg-[#C85A32] text-white text-xs font-bold hover:bg-[#B34925] transition-colors flex items-center justify-center gap-1.5 shadow-sm shadow-[#C85A32]/25"
+            className="w-full py-2.5 rounded-xl bg-[#C85A32] text-white text-xs font-bold hover:bg-[#B34925] transition-colors flex items-center justify-center gap-1.5 shadow-sm shadow-[#C85A32]/25 cursor-pointer"
           >
             {loading ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -267,13 +320,18 @@ function LoginContent() {
           </button>
         </form>
 
-        {/* Toggle Sign in / Sign up */}
-        <div className="text-center pt-2">
+        {/* Toggle Sign in / Sign up bottom link */}
+        <div className="text-center pt-1">
           <button
-            onClick={() => setIsSignUp(!isSignUp)}
-            className="text-xs font-semibold text-[#C85A32] hover:underline"
+            type="button"
+            onClick={() => {
+              setIsSignUp(!isSignUp);
+              setErrorMsg("");
+              setSuccessNotice("");
+            }}
+            className="text-xs font-semibold text-[#C85A32] hover:underline cursor-pointer"
           >
-            {isSignUp ? "Already have an account? Sign In" : t.signUp}
+            {isSignUp ? "Already have an account? Sign In (ចូលគណនី)" : `${t.signUp} (បង្កើតគណនីថ្មី)`}
           </button>
         </div>
       </div>
