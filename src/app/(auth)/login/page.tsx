@@ -14,6 +14,8 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
+  Sparkles,
+  KeyRound,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -21,27 +23,45 @@ import { useLanguage } from "@/context/LanguageContext";
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const {
+    user,
     signInWithGoogle,
     signInWithEmail,
     signUpWithEmail,
+    setPassword: setAccountPassword,
     isConfigured,
-    toggleDemoLogin,
   } = useAuth();
 
   const [isSignUp, setIsSignUp] = useState(false);
 
   useEffect(() => {
+    if (user) {
+      router.replace("/");
+    }
+  }, [user, router]);
+
+  useEffect(() => {
     if (searchParams.get("mode") === "signup") {
       setIsSignUp(true);
     }
+    const err =
+      searchParams.get("error_description") || searchParams.get("error");
+    if (err) {
+      setErrorMsg(decodeURIComponent(err));
+      setGoogleLoading(false);
+    }
   }, [searchParams]);
 
-  const [email, setEmail] = useState("");
+  // Login identifier (username or email like Instagram)
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+
+  // Sign up fields
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -60,36 +80,135 @@ function LoginContent() {
     }
   };
 
+  // 1-Click Instant Foodie Access (Instagram test mode)
+  const handleQuickAccess = async () => {
+    setLoading(true);
+    setErrorMsg("");
+    try {
+      const rand = Math.floor(100 + Math.random() * 900);
+      const guestUsername = `foodie_khmer_${rand}`;
+      const guestPass = `pass_${Date.now()}`;
+      const guestEmail = `${guestUsername}@numpang.app`;
+
+      const { error, session } = await signUpWithEmail(
+        guestEmail,
+        guestPass,
+        guestUsername,
+        "Khmer Food Lover"
+      );
+
+      if (error) {
+        setErrorMsg(error.message);
+      } else {
+        setSuccessNotice(
+          language === "km"
+            ? `សូមស្វាគមន៍! បានចូលគណនីជា @${guestUsername}`
+            : `Welcome! Logged in as @${guestUsername}`
+        );
+        setTimeout(() => router.push("/"), 500);
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || "Quick access failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 1-Click Set Password & Sign In
+  const handleSetPasswordAndSignIn = async () => {
+    if (!identifier || !password) {
+      setErrorMsg(
+        language === "km"
+          ? "សូមបញ្ចូលឈ្មោះគណនី និងពាក្យសម្ងាត់ដែលចង់កំណត់"
+          : "Please enter your username and password."
+      );
+      return;
+    }
+    if (password.length < 6) {
+      setErrorMsg(
+        language === "km"
+          ? "ពាក្យសម្ងាត់ត្រូវមានយ៉ាងតិច ៦ តួអក្សរ"
+          : "Password must be at least 6 characters."
+      );
+      return;
+    }
+    setLoading(true);
+    setErrorMsg("");
+    try {
+      const { error } = await setAccountPassword(identifier, password);
+      if (error) {
+        setErrorMsg(error.message);
+      } else {
+        setSuccessNotice(
+          language === "km"
+            ? "បានកំណត់ពាក្យសម្ងាត់ជោគជ័យ! កំពុងចូលប្រព័ន្ធ..."
+            : "Password updated successfully! Logging in..."
+        );
+        setTimeout(() => router.push("/"), 500);
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to set password.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
     setSuccessNotice("");
 
-    if (!email || !password) {
-      setErrorMsg("Please fill in email and password.");
+    if (!password) {
+      setErrorMsg(language === "km" ? "សូមបញ្ចូលពាក្យសម្ងាត់" : "Please fill in password.");
+      return;
+    }
+
+    if (isSignUp && !username) {
+      setErrorMsg(language === "km" ? "សូមជ្រើសរើសឈ្មោះគណនី (Username)" : "Please choose a username.");
+      return;
+    }
+
+    if (!isSignUp && !identifier) {
+      setErrorMsg(language === "km" ? "សូមបញ្ចូលឈ្មោះគណនី ឬអ៊ីមែល" : "Please enter your username or email.");
       return;
     }
 
     setLoading(true);
     try {
       if (isSignUp) {
-        if (!username) {
-          setErrorMsg("Please choose a username.");
-          setLoading(false);
-          return;
-        }
-        const { error, session } = await signUpWithEmail(email, password, username, fullName);
+        const targetEmail =
+          email && email.includes("@")
+            ? email.trim().toLowerCase()
+            : `${username.toLowerCase().replace(/[^a-z0-9_]/g, "")}@numpang.app`;
+
+        const { error, session } = await signUpWithEmail(
+          targetEmail,
+          password,
+          username,
+          fullName
+        );
+
         if (error) {
           setErrorMsg(error.message);
         } else if (session) {
-          setSuccessNotice("Account created successfully! Redirecting...");
-          setTimeout(() => router.push("/"), 700);
+          setSuccessNotice(
+            language === "km"
+              ? "បានបង្កើតគណនីជោគជ័យ! កំពុងនាំចូល..."
+              : "Account created successfully! Redirecting..."
+          );
+          setTimeout(() => router.push("/"), 600);
         } else {
-          setSuccessNotice("Account registered! Please log in with your new account credentials.");
-          setIsSignUp(false);
+          setSuccessNotice(
+            language === "km"
+              ? "បានចុះឈ្មោះជោគជ័យ! កំពុងចូលប្រព័ន្ធ..."
+              : "Account registered! Logging in..."
+          );
+          await signInWithEmail(targetEmail, password);
+          router.push("/");
         }
       } else {
-        const { error } = await signInWithEmail(email, password);
+        // Sign In with username OR email (like Instagram!)
+        const { error } = await signInWithEmail(identifier, password);
         if (error) {
           setErrorMsg(error.message);
         } else {
@@ -101,11 +220,6 @@ function LoginContent() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDemoSignIn = () => {
-    toggleDemoLogin();
-    router.push("/");
   };
 
   return (
@@ -171,20 +285,37 @@ function LoginContent() {
               </div>
             </div>
             {errorMsg.toLowerCase().includes("invalid login credentials") && !isSignUp && (
-              <div className="mt-1 pt-2 border-t border-red-200/60 dark:border-red-900/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <span className="text-[11px] text-neutral-600 dark:text-neutral-300">
-                  មិនទាន់មានគណនីមែនទេ?
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsSignUp(true);
-                    setErrorMsg("");
-                  }}
-                  className="px-3 py-1.5 rounded-xl bg-[#C85A32] text-white text-[11px] font-bold hover:bg-[#B34925] transition-colors inline-block w-fit cursor-pointer"
-                >
-                  ចុចទីនេះដើម្បីចុះឈ្មោះបង្កើតគណនីថ្មី
-                </button>
+              <div className="mt-1 pt-2 border-t border-red-200/60 dark:border-red-900/50 flex flex-col gap-2">
+                {password.length >= 6 ? (
+                  <button
+                    type="button"
+                    onClick={handleSetPasswordAndSignIn}
+                    disabled={loading}
+                    className="w-full py-2 px-3 rounded-xl bg-[#C85A32] text-white text-[11px] font-bold hover:bg-[#B34925] transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-98"
+                  >
+                    <KeyRound className="w-3.5 h-3.5" />
+                    <span>
+                      {language === "km"
+                        ? `កំណត់ពាក្យសម្ងាត់នេះសម្រាប់ @${identifier.replace(/^@/, "")} & ចូលភ្លាមៗ`
+                        : `Set this password for @${identifier.replace(/^@/, "")} & Sign In`}
+                    </span>
+                  </button>
+                ) : null}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-0.5">
+                  <span className="text-[11px] text-neutral-600 dark:text-neutral-300">
+                    {language === "km" ? "មិនទាន់មានគណនីមែនទេ?" : "Don't have an account yet?"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSignUp(true);
+                      setErrorMsg("");
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 text-[11px] font-bold hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors inline-block w-fit cursor-pointer"
+                  >
+                    {language === "km" ? "ចុះឈ្មោះបង្កើតគណនីថ្មី" : "Create New Account"}
+                  </button>
+                </div>
               </div>
             )}
           </div>
@@ -235,30 +366,15 @@ function LoginContent() {
         {/* Divider */}
         <div className="flex items-center gap-3 text-neutral-400 text-xs">
           <span className="flex-1 h-px bg-neutral-200 dark:bg-neutral-800" />
-          <span>{t.orContinueWithEmail}</span>
+          <span>{language === "km" ? "ឬចូលតាមឈ្មោះគណនី (Instagram Style)" : "Or use Username / Password"}</span>
           <span className="flex-1 h-px bg-neutral-200 dark:bg-neutral-800" />
         </div>
 
-        {/* Email Password Form */}
+        {/* Instagram-style Form */}
         <form onSubmit={handleSubmit} className="space-y-3">
-          {isSignUp && (
+          {isSignUp ? (
             <>
-              <div className="space-y-1">
-                <label className="block text-[11px] font-bold text-neutral-600 dark:text-neutral-400">
-                  {t.fullName}
-                </label>
-                <div className="relative">
-                  <UserIcon className="w-4 h-4 text-neutral-400 absolute left-3 top-2.5" />
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Sokha Chea"
-                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#FAF7F2] dark:bg-[#121316] border border-[#EFE6D8] dark:border-[#2C2E38] text-xs text-neutral-900 dark:text-neutral-100 focus:outline-none focus:border-[#C85A32]"
-                  />
-                </div>
-              </div>
-
+              {/* Sign Up Fields */}
               <div className="space-y-1">
                 <label className="block text-[11px] font-bold text-neutral-600 dark:text-neutral-400">
                   {t.username} *
@@ -268,34 +384,71 @@ function LoginContent() {
                     @
                   </span>
                   <input
+                    id="input-username"
                     type="text"
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
-                    placeholder="sokha_eats"
+                    placeholder="vireak_eats"
                     className="w-full pl-8 pr-3 py-2 rounded-xl bg-[#FAF7F2] dark:bg-[#121316] border border-[#EFE6D8] dark:border-[#2C2E38] text-xs text-neutral-900 dark:text-neutral-100 focus:outline-none focus:border-[#C85A32]"
                   />
                 </div>
               </div>
-            </>
-          )}
 
-          <div className="space-y-1">
-            <label className="block text-[11px] font-bold text-neutral-600 dark:text-neutral-400">
-              Email *
-            </label>
-            <div className="relative">
-              <Mail className="w-4 h-4 text-neutral-400 absolute left-3 top-2.5" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t.emailPlaceholder}
-                className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#FAF7F2] dark:bg-[#121316] border border-[#EFE6D8] dark:border-[#2C2E38] text-xs text-neutral-900 dark:text-neutral-100 focus:outline-none focus:border-[#C85A32]"
-              />
+              <div className="space-y-1">
+                <label className="block text-[11px] font-bold text-neutral-600 dark:text-neutral-400">
+                  {t.fullName} ({language === "km" ? "មិនបង្ខំ" : "Optional"})
+                </label>
+                <div className="relative">
+                  <UserIcon className="w-4 h-4 text-neutral-400 absolute left-3 top-2.5" />
+                  <input
+                    id="input-fullname"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Vireak Jame"
+                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#FAF7F2] dark:bg-[#121316] border border-[#EFE6D8] dark:border-[#2C2E38] text-xs text-neutral-900 dark:text-neutral-100 focus:outline-none focus:border-[#C85A32]"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-[11px] font-bold text-neutral-600 dark:text-neutral-400">
+                  Email ({language === "km" ? "មិនបង្ខំ - បង្កើតស្វ័យប្រវត្តិតាម Username" : "Optional"})
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-neutral-400 absolute left-3 top-2.5" />
+                  <input
+                    id="input-email"
+                    type="text"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder={username ? `${username}@numpang.app` : "youremail@gmail.com"}
+                    className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#FAF7F2] dark:bg-[#121316] border border-[#EFE6D8] dark:border-[#2C2E38] text-xs text-neutral-900 dark:text-neutral-100 focus:outline-none focus:border-[#C85A32]"
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            /* Sign In Field (Username OR Email like Instagram) */
+            <div className="space-y-1">
+              <label className="block text-[11px] font-bold text-neutral-600 dark:text-neutral-400">
+                {language === "km" ? "ឈ្មោះគណនី ឬ អ៊ីមែល *" : "Username or Email *"}
+              </label>
+              <div className="relative">
+                <UserIcon className="w-4 h-4 text-neutral-400 absolute left-3 top-2.5" />
+                <input
+                  id="input-identifier"
+                  type="text"
+                  required
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder={language === "km" ? "ឈ្មោះគណនី ឬ អ៊ីមែល (ឧ. @vireakjame622)" : "Username or email (e.g. vireakjame622)"}
+                  className="w-full pl-9 pr-3 py-2 rounded-xl bg-[#FAF7F2] dark:bg-[#121316] border border-[#EFE6D8] dark:border-[#2C2E38] text-xs text-neutral-900 dark:text-neutral-100 focus:outline-none focus:border-[#C85A32]"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="space-y-1">
             <label className="block text-[11px] font-bold text-neutral-600 dark:text-neutral-400">
@@ -304,6 +457,7 @@ function LoginContent() {
             <div className="relative">
               <Lock className="w-4 h-4 text-neutral-400 absolute left-3 top-2.5" />
               <input
+                id="input-password"
                 type="password"
                 required
                 value={password}
@@ -315,6 +469,7 @@ function LoginContent() {
           </div>
 
           <button
+            id="btn-auth-submit"
             type="submit"
             disabled={loading}
             className="w-full py-2.5 rounded-xl bg-[#C85A32] text-white text-xs font-bold hover:bg-[#B34925] transition-colors flex items-center justify-center gap-1.5 shadow-sm shadow-[#C85A32]/25 cursor-pointer"
@@ -330,6 +485,23 @@ function LoginContent() {
           </button>
         </form>
 
+        {/* 1-Click Instant Foodie Access (Instagram guest quick access) */}
+        <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800">
+          <button
+            type="button"
+            onClick={handleQuickAccess}
+            disabled={loading}
+            className="w-full py-2.5 px-3 rounded-2xl bg-gradient-to-r from-[#C85A32]/10 to-[#E5BE48]/10 hover:from-[#C85A32]/20 hover:to-[#E5BE48]/20 border border-[#C85A32]/20 text-xs font-bold text-[#C85A32] dark:text-[#E06D44] flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs active:scale-98"
+          >
+            <Sparkles className="w-4 h-4 text-[#C85A32]" />
+            <span>
+              {language === "km"
+                ? "ចូលលេងភ្លាមៗ ១-Click (Instant Foodie Access)"
+                : "Instant 1-Click Foodie Access"}
+            </span>
+          </button>
+        </div>
+
         {/* Toggle Sign in / Sign up bottom link */}
         <div className="text-center pt-1">
           <button
@@ -344,72 +516,6 @@ function LoginContent() {
             {isSignUp ? "Already have an account? Sign In (ចូលគណនី)" : `${t.signUp} (បង្កើតគណនីថ្មី)`}
           </button>
         </div>
-      </div>
-
-
-      {/* Google OAuth & Supabase Setup Instructions */}
-      <div className="rounded-3xl border border-[#EFE6D8] dark:border-[#2C2E38] bg-white dark:bg-[#1B1C22] overflow-hidden shadow-xs">
-        <button
-          onClick={() => setShowSetupGuide(!showSetupGuide)}
-          className="w-full p-4 flex items-center justify-between text-left text-xs font-bold text-neutral-800 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-800/40"
-        >
-          <span className="flex items-center gap-2 text-[#C85A32]">
-            <HelpCircle className="w-4 h-4 flex-shrink-0" />
-            <span>Why Google Sign-In needs setup (How to enable)</span>
-          </span>
-          {showSetupGuide ? (
-            <ChevronUp className="w-4 h-4 text-neutral-400" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-neutral-400" />
-          )}
-        </button>
-
-        {showSetupGuide && (
-          <div className="px-4 pb-4 pt-1 space-y-3 text-xs text-neutral-600 dark:text-neutral-400 border-t border-neutral-100 dark:border-neutral-800 leading-relaxed">
-            <p>
-              Google OAuth is an external security protocol. For Google to verify who you are, it requires linking your Google Cloud OAuth Client to your Supabase project:
-            </p>
-
-            <ol className="list-decimal pl-4 space-y-2 text-[11px]">
-              <li>
-                <strong>Supply your Supabase keys:</strong> Create a project at{" "}
-                <a
-                  href="https://supabase.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[#C85A32] underline"
-                >
-                  supabase.com
-                </a>{" "}
-                and copy your Project URL & Anon Key into <code className="bg-neutral-100 dark:bg-neutral-800 px-1 py-0.5 rounded">.env.local</code>.
-              </li>
-              <li>
-                <strong>Create Google OAuth Client ID:</strong> In{" "}
-                <a
-                  href="https://console.cloud.google.com/apis/credentials"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[#C85A32] underline"
-                >
-                  Google Cloud Console
-                </a>
-                , create a Web Application credential. Set Authorized redirect URI to:
-                <br />
-                <code className="block mt-1 p-2 rounded-lg bg-neutral-100 dark:bg-neutral-800 select-all font-mono text-[10px] text-[#C85A32] break-all">
-                  https://&lt;your-project-id&gt;.supabase.co/auth/v1/callback
-                </code>
-              </li>
-              <li>
-                <strong>Enable Google in Supabase:</strong> In Supabase Dashboard, go to <strong>Authentication &gt; Providers &gt; Google</strong>, toggle it to <strong>Enabled</strong>, and paste your Google Client ID & Secret.
-              </li>
-            </ol>
-
-            <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-200 text-[11px]">
-              Complete step-by-step instructions with screenshots and URLs are provided in{" "}
-              <strong>README.md</strong>.
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

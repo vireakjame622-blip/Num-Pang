@@ -15,6 +15,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUpWithEmail: (email: string, password: string, username: string, fullName: string) => Promise<{ error: Error | null; session?: any }>;
+  setPassword: (identifier: string, newPassword: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
   toggleDemoLogin: () => void;
@@ -40,6 +41,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Live Supabase Authentication
     const fetchUser = async () => {
       try {
+        // Exchange code if redirected to any client page (e.g. /?code=... or /login?code=...)
+        if (typeof window !== "undefined") {
+          const urlParams = new URLSearchParams(window.location.search);
+          const code = urlParams.get("code");
+          if (code) {
+            try {
+              const { error: exchangeErr } =
+                await supabase.auth.exchangeCodeForSession(code);
+              if (!exchangeErr) {
+                // Remove code from query string without page reload
+                const cleanUrl = new URL(window.location.href);
+                cleanUrl.searchParams.delete("code");
+                cleanUrl.searchParams.delete("state");
+                window.history.replaceState(
+                  {},
+                  document.title,
+                  cleanUrl.pathname +
+                    (cleanUrl.searchParams.toString()
+                      ? `?${cleanUrl.searchParams.toString()}`
+                      : "")
+                );
+              }
+            } catch (exchangeEx) {
+              console.warn("Client exchangeCodeForSession failed:", exchangeEx);
+            }
+          }
+        }
+
         const { data: { user } } = await supabase.auth.getUser();
         setUser(user);
 
@@ -153,6 +182,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       provider: "google",
       options: {
         redirectTo: redirectUrl,
+        queryParams: {
+          access_type: "offline",
+          prompt: "select_account",
+        },
       },
     });
     if (error) {
@@ -160,12 +193,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signInWithEmail = async (email: string, password: string) => {
+  const signInWithEmail = async (identifier: string, password: string) => {
     if (!configured) {
       toggleDemoLogin();
       return { error: null };
     }
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+    // Resolve username to email (Instagram-style username login)
+    const raw = identifier.trim().toLowerCase();
+    let targetEmail = raw.startsWith("@") ? raw.slice(1) : raw;
+    let isGoogleOnly = false;
+
+    try {
+      const resolveRes = await fetch("/api/auth/resolve-identifier", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: targetEmail }),
+      });
+      const resolveData = await resolveRes.json();
+      if (resolveData?.email) {
+        targetEmail = resolveData.email;
+        isGoogleOnly = !!resolveData.isGoogleOnly;
+      }
+    } catch (_) {}
+
+    let { data, error } = await supabase.auth.signInWithPassword({ email: targetEmail, password });
+
+    // If this account was registered via Google and has no password yet:
+    // Auto-link this password so they can log in seamlessly!
+    if (error && isGoogleOnly && password.length >= 6) {
+      try {
+        const linkRes = await fetch("/api/auth/set-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: targetEmail, password }),
+        });
+        if (linkRes.ok) {
+          const retry = await supabase.auth.signInWithPassword({ email: targetEmail, password });
+          if (!retry.error) {
+            return { error: null };
+          }
+        }
+      } catch (_) {}
+    }
 
     // If Supabase returned "Email not confirmed", auto-confirm via admin endpoint and retry
     if (error && error.message?.toLowerCase().includes("email not confirmed")) {
@@ -174,15 +244,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            email,
+            email: targetEmail,
             password,
-            username: email.split("@")[0],
+            username: targetEmail.split("@")[0],
             fullName: "",
           }),
         });
 
         if (confirmRes.ok) {
-          const retry = await supabase.auth.signInWithPassword({ email, password });
+          const retry = await supabase.auth.signInWithPassword({ email: targetEmail, password });
           if (!retry.error) {
             return { error: null };
           }
@@ -191,6 +261,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     return { error: error as Error | null };
+  };
+
+  const setPassword = async (identifier: string, newPassword: string) => {
+    try {
+      const res = await fetch("/api/auth/set-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier, password: newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { error: new Error(data.error || "Failed to set password") };
+      }
+      const signInRes = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: newPassword,
+      });
+      if (signInRes.data?.session?.user) {
+        setUser(signInRes.data.session.user);
+      }
+      return { error: (signInRes.error as Error) || null };
+    } catch (err: any) {
+      return { error: err };
+    }
   };
 
   const signUpWithEmail = async (
@@ -319,6 +413,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signInWithGoogle,
         signInWithEmail,
         signUpWithEmail,
+        setPassword,
         signOut,
         updateProfile,
         toggleDemoLogin,

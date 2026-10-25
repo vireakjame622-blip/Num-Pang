@@ -6,21 +6,28 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { email, password, username, fullName } = body;
 
-    if (!email || !password) {
+    if (!password) {
       return NextResponse.json(
-        { error: "Email and password are required" },
+        { error: "Password is required" },
         { status: 400 }
       );
     }
 
     const cleanUsername =
-      (username || "").toLowerCase().replace(/[^a-z0-9_]/g, "") ||
+      (username || (email ? email.split("@")[0] : "")).toLowerCase().replace(/[^a-z0-9_]/g, "") ||
       `foodie_${Date.now()}`;
+
+    const finalEmail =
+      email && email.includes("@")
+        ? email.toLowerCase().trim()
+        : `${cleanUsername}@numpang.app`;
 
     // 1. Check if user already exists
     const { data: usersData } = await supabaseAdmin.auth.admin.listUsers();
     const existingUser = usersData?.users?.find(
-      (u) => u.email?.toLowerCase() === email.toLowerCase()
+      (u) =>
+        u.email?.toLowerCase() === finalEmail ||
+        u.user_metadata?.username === cleanUsername
     );
 
     let userId: string;
@@ -46,7 +53,7 @@ export async function POST(request: Request) {
       // 2. Create brand new user with email_confirm: true
       const { data: created, error: createErr } =
         await supabaseAdmin.auth.admin.createUser({
-          email,
+          email: finalEmail,
           password,
           email_confirm: true,
           user_metadata: {
