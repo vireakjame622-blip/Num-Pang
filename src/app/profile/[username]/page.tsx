@@ -17,6 +17,8 @@ import {
   MapPin,
   UtensilsCrossed,
   MessageCircle,
+  Users,
+  Loader2,
 } from "lucide-react";
 import { Post, Profile } from "@/types";
 import { useAuth } from "@/context/AuthContext";
@@ -31,7 +33,7 @@ function UserProfileContent() {
   const router = useRouter();
   const username = params?.username as string;
 
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { profile: currentAuthProfile, signOut, updateProfile } = useAuth();
 
   const [profileData, setProfileData] = useState<Profile | null>(null);
@@ -55,6 +57,22 @@ function UserProfileContent() {
     isOpen: boolean;
     type: "report" | "block";
   }>({ isOpen: false, type: "report" });
+
+  // Followers / Following Modal
+  const [followModal, setFollowModal] = useState<{
+    isOpen: boolean;
+    type: "followers" | "following";
+    title: string;
+    users: Profile[];
+    loading: boolean;
+  }>({
+    isOpen: false,
+    type: "followers",
+    title: "",
+    users: [],
+    loading: false,
+  });
+
 
   const isOwner =
     currentAuthProfile?.username === username ||
@@ -117,6 +135,16 @@ function UserProfileContent() {
               .select("*", { count: "exact", head: true })
               .eq("follower_id", targetUserId);
             if (typeof ingCount === "number") setFollowingCount(ingCount);
+
+            if (currentAuthProfile && currentAuthProfile.id !== targetUserId) {
+              const { data: fRec } = await supabase
+                .from("follows")
+                .select("id")
+                .eq("follower_id", currentAuthProfile.id)
+                .eq("following_id", targetUserId)
+                .maybeSingle();
+              setIsFollowing(!!fRec);
+            }
           } catch {
             // fallback
           }
@@ -162,6 +190,65 @@ function UserProfileContent() {
 
     if (username) fetchUserData();
   }, [username, currentAuthProfile, isOwner]);
+
+  // Open Followers or Following list modal
+  const handleOpenFollowModal = async (type: "followers" | "following") => {
+    if (!profileData) return;
+    const modalTitle =
+      type === "followers"
+        ? language === "km"
+          ? "អ្នកតាមដាន (Followers)"
+          : "Followers"
+        : language === "km"
+        ? "កំពុងតាមដាន (Following)"
+        : "Following";
+
+    setFollowModal({
+      isOpen: true,
+      type,
+      title: modalTitle,
+      users: [],
+      loading: true,
+    });
+
+    if (isSupabaseConfigured()) {
+      try {
+        const supabase = createClient();
+        const targetField = type === "followers" ? "following_id" : "follower_id";
+        const resultField = type === "followers" ? "follower_id" : "following_id";
+
+        const { data: followRows } = await supabase
+          .from("follows")
+          .select(resultField)
+          .eq(targetField, profileData.id);
+
+        if (followRows && followRows.length > 0) {
+          const userIds = followRows
+            .map((r: any) => r[resultField])
+            .filter(Boolean);
+
+          if (userIds.length > 0) {
+            const { data: userProfiles } = await supabase
+              .from("profiles")
+              .select("*")
+              .in("id", userIds);
+
+            if (userProfiles) {
+              setFollowModal((prev) => ({
+                ...prev,
+                users: userProfiles as Profile[],
+                loading: false,
+              }));
+              return;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Could not load follow list:", err);
+      }
+    }
+    setFollowModal((prev) => ({ ...prev, loading: false }));
+  };
 
   // Follow / Unfollow
   const handleToggleFollow = async () => {
@@ -337,24 +424,36 @@ function UserProfileContent() {
 
         {/* Stats Row */}
         <div className="grid grid-cols-3 gap-2 py-2.5 border-t border-neutral-100 dark:border-neutral-800 text-center">
-          <div>
+          <div className="py-1">
             <div className="text-sm font-extrabold text-neutral-900 dark:text-neutral-100">
               {userPosts.length}
             </div>
             <div className="text-[10px] text-neutral-500">{t.postsCount}</div>
           </div>
-          <div>
-            <div className="text-sm font-extrabold text-neutral-900 dark:text-neutral-100">
+          <button
+            onClick={() => handleOpenFollowModal("followers")}
+            className="group hover:bg-neutral-50 dark:hover:bg-neutral-800/50 py-1 rounded-xl transition-all cursor-pointer"
+            title="View Followers"
+          >
+            <div className="text-sm font-extrabold text-neutral-900 dark:text-neutral-100 group-hover:text-[#C85A32] transition-colors">
               {followersCount}
             </div>
-            <div className="text-[10px] text-neutral-500">{t.followers}</div>
-          </div>
-          <div>
-            <div className="text-sm font-extrabold text-neutral-900 dark:text-neutral-100">
+            <div className="text-[10px] text-neutral-500 font-medium group-hover:text-[#C85A32] transition-colors">
+              {t.followers}
+            </div>
+          </button>
+          <button
+            onClick={() => handleOpenFollowModal("following")}
+            className="group hover:bg-neutral-50 dark:hover:bg-neutral-800/50 py-1 rounded-xl transition-all cursor-pointer"
+            title="View Following"
+          >
+            <div className="text-sm font-extrabold text-neutral-900 dark:text-neutral-100 group-hover:text-[#C85A32] transition-colors">
               {followingCount}
             </div>
-            <div className="text-[10px] text-neutral-500">{t.following}</div>
-          </div>
+            <div className="text-[10px] text-neutral-500 font-medium group-hover:text-[#C85A32] transition-colors">
+              {t.following}
+            </div>
+          </button>
         </div>
       </div>
 
@@ -514,6 +613,75 @@ function UserProfileContent() {
         targetUsername={profileData.username}
         onBlockSuccess={() => router.push("/")}
       />
+
+      {/* 5. Followers / Following List Modal */}
+      {followModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="w-full max-w-sm bg-white dark:bg-[#1B1C22] border border-[#EFE6D8] dark:border-[#2C2E38] rounded-3xl p-4 shadow-2xl space-y-3">
+            <div className="flex items-center justify-between border-b border-[#EFE6D8] dark:border-[#2C2E38] pb-2.5">
+              <h3 className="text-xs font-bold text-neutral-900 dark:text-neutral-100 flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-[#C85A32]" />
+                <span>{followModal.title}</span>
+              </h3>
+              <button
+                onClick={() => setFollowModal((prev) => ({ ...prev, isOpen: false }))}
+                className="p-1 rounded-lg text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {followModal.loading ? (
+              <div className="py-8 flex justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-[#C85A32]" />
+              </div>
+            ) : followModal.users.length === 0 ? (
+              <div className="py-8 text-center text-xs text-neutral-400 space-y-1">
+                <p className="font-semibold text-neutral-700 dark:text-neutral-300">
+                  {language === "km" ? "មិនទាន់មាននរណាម្នាក់ទេ" : "No users found"}
+                </p>
+                <p className="text-[11px] text-neutral-500">
+                  {followModal.type === "followers"
+                    ? language === "km" ? "គណនីនេះមិនទាន់មានអ្នក Follow នៅឡើយទេ" : "No followers yet"
+                    : language === "km" ? "គណនីនេះមិនទាន់បាន Follow នរណាម្នាក់ឡើយ" : "Not following anyone yet"}
+                </p>
+              </div>
+            ) : (
+              <div className="max-h-64 overflow-y-auto divide-y divide-[#EFE6D8]/50 dark:divide-[#2C2E38]/50 pr-1">
+                {followModal.users.map((u) => (
+                  <Link
+                    key={u.id}
+                    href={`/profile/${u.username}`}
+                    onClick={() => setFollowModal((prev) => ({ ...prev, isOpen: false }))}
+                    className="flex items-center justify-between py-2 px-1 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 rounded-xl transition-colors"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-9 h-9 rounded-full bg-[#C85A32]/10 text-[#C85A32] flex items-center justify-center font-bold text-xs overflow-hidden flex-shrink-0 border border-[#C85A32]/20">
+                        {u.avatar_url ? (
+                          <img src={u.avatar_url} alt={u.username} className="w-full h-full object-cover" />
+                        ) : (
+                          u.username[0].toUpperCase()
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-neutral-900 dark:text-neutral-100 truncate">
+                          {u.full_name || u.username}
+                        </p>
+                        <p className="text-[10px] text-[#C85A32] font-semibold truncate">
+                          @{u.username}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold text-[#C85A32] px-2.5 py-1 rounded-lg bg-[#C85A32]/10">
+                      View
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
