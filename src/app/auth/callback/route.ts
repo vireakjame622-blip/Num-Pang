@@ -34,8 +34,8 @@ export async function GET(request: Request) {
     const response = NextResponse.redirect(redirectUrl);
 
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || "https://cizbyaoiapbuvvycxlqb.supabase.co",
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_0vuEinuZAFEuTuuyP4yuxA_1EaZNh9R",
+      process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
       {
         cookies: {
           getAll() {

@@ -5,13 +5,11 @@ import { isSupabaseConfigured } from "./client";
 export async function createClient() {
   const cookieStore = await cookies();
 
-  const supabaseUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    "https://cizbyaoiapbuvvycxlqb.supabase.co";
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
   const supabaseAnonKey =
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-    "sb_publishable_0vuEinuZAFEuTuuyP4yuxA_1EaZNh9R";
+    "";
 
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
